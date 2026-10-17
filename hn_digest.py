@@ -1,3 +1,16 @@
+"""HN Afternoon Digest.
+
+Fetches the day's top Hacker News stories, summarizes them with a Mistral
+model, and writes an Obsidian-ready markdown note into the repository.
+Designed to run as a GitHub Action: the note is committed by the workflow,
+and the repository syncs into an Obsidian vault through the Obsidian Git
+plugin.
+
+Time guard: when run by the hourly schedule, the script exits unless the
+local time in Europe/Brussels is 15:xx. Manual runs from the Actions tab
+set FORCE_RUN=1 and always execute.
+"""
+
 import asyncio
 import json
 import os
@@ -7,9 +20,9 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import httpx
-from mistralai import Mistral
 
 HN_SEARCH_URL = "https://hn.algolia.com/api/v1/search"
+MISTRAL_CHAT_URL = "https://api.mistral.ai/v1/chat/completions"
 NOTE_DIR = "HN Digest"
 
 MAX_STORIES = int(os.environ.get("MAX_STORIES", "12"))
@@ -30,12 +43,12 @@ SYSTEM_PROMPT = (
 
 
 def check_time_guard() -> None:
-    """Exit quietly unless it is 15:xx in Europe/Copenhagen, or forced."""
+    """Exit quietly unless it is 15:xx in Europe/Brussels, or forced."""
     if os.environ.get("FORCE_RUN") == "1":
         return
-    now = datetime.now(ZoneInfo("Europe/Copenhagen"))
+    now = datetime.now(ZoneInfo("Europe/Brussels"))
     if now.hour != 15:
-        print(f"Not 15:00 CPH yet (local time is {now:%H:%M}), skipping.")
+        print(f"Not 15:00 Brussels yet (local time is {now:%H:%M}), skipping.")
         sys.exit(0)
     print(f"Running, local time is {now:%H:%M}.")
 
@@ -88,8 +101,8 @@ async def enrich_with_article_text(stories: list[dict]) -> list[dict]:
     return list(await asyncio.gather(*(fetch_one(s) for s in stories)))
 
 
-def summarize(client: Mistral, stories: list[dict], note_date: str) -> dict:
-    """Send the stories through a Mistral model and get a structured digest."""
+def summarize(api_key: str, stories: list[dict], note_date: str) -> dict:
+    """Send the stories to the Mistral chat API and get a structured digest."""
     payload = [
         {
             "title": s.get("title"),
@@ -124,15 +137,33 @@ def summarize(client: Mistral, stories: list[dict], note_date: str) -> dict:
         "product names as they are.\n"
     )
 
-    response = client.chat.complete(
-        model=DIGEST_MODEL,
-        messages=[
+    request = {
+        "model": DIGEST_MODEL,
+        "temperature": 0.3,
+        "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ],
-        temperature=0.3,
-    )
-    raw = response.choices[0].message.content or ""
+    }
+
+    try:
+        response = httpx.post(
+            MISTRAL_CHAT_URL,
+            headers={"Authorization": f"Bearer {api_key}"},
+            json=request,
+            timeout=120,
+        )
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        print(f"Mistral API returned {exc.response.status_code}:")
+        print(exc.response.text[:2000])
+        sys.exit(1)
+    except httpx.HTTPError as exc:
+        print(f"Request to the Mistral API failed: {exc}")
+        sys.exit(1)
+
+    data = response.json()
+    raw = data["choices"][0]["message"]["content"] or ""
 
     cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip())
     try:
@@ -200,8 +231,7 @@ def main() -> None:
     with_text = sum(1 for s in stories if s.get("article_text"))
     print(f"Enriched {with_text} of {len(stories)} with article text.")
 
-    client = Mistral(api_key=api_key)
-    digest = summarize(client, stories, note_date)
+    digest = summarize(api_key, stories, note_date)
     note = render_note(digest, note_date)
 
     os.makedirs(NOTE_DIR, exist_ok=True)

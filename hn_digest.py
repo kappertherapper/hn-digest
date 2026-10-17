@@ -1,16 +1,3 @@
-"""HN Afternoon Digest.
-
-Fetches the day's top Hacker News stories, summarizes them with a Mistral
-model, and writes an Obsidian-ready markdown note into the repository.
-Designed to run as a GitHub Action: the note is committed by the workflow,
-and the repository syncs into an Obsidian vault through the Obsidian Git
-plugin.
-
-Time guard: when run by the hourly schedule, the script exits unless the
-local time in Europe/Brussels is 15:xx. Manual runs from the Actions tab
-set FORCE_RUN=1 and always execute.
-"""
-
 import asyncio
 import json
 import os
@@ -43,18 +30,16 @@ SYSTEM_PROMPT = (
 
 
 def check_time_guard() -> None:
-    """Exit quietly unless it is 15:xx in Europe/Brussels, or forced."""
     if os.environ.get("FORCE_RUN") == "1":
         return
-    now = datetime.now(ZoneInfo("Europe/Brussels"))
+    now = datetime.now(ZoneInfo("Europe/Copenhagen"))
     if now.hour != 15:
-        print(f"Not 15:00 Brussels yet (local time is {now:%H:%M}), skipping.")
+        print(f"Not 15:00 CPH yet (local time is {now:%H:%M}), skipping.")
         sys.exit(0)
     print(f"Running, local time is {now:%H:%M}.")
 
 
 async def fetch_stories() -> list[dict]:
-    """Fetch the HN front page and return the highest-scoring stories."""
     params = {"tags": "front_page", "hitsPerPage": 40}
     async with httpx.AsyncClient(timeout=30) as client:
         response = await client.get(HN_SEARCH_URL, params=params)
@@ -175,22 +160,9 @@ def summarize(api_key: str, stories: list[dict], note_date: str) -> dict:
 
 
 def render_note(digest: dict, note_date: str) -> str:
-    """Build the final Obsidian markdown note."""
-    lines: list[str] = []
-    lines.append("---")
-    lines.append(f'title: "Hacker News digest {note_date}"')
-    lines.append(f"date: {note_date}")
-    lines.append("tags:")
-    lines.append("  - hacker-news")
-    lines.append("  - digest")
-    lines.append("---")
-    lines.append("")
-    lines.append(f"# Hacker News digest {note_date}")
-    lines.append("")
-
     highlights = digest.get("highlights") or []
     if highlights:
-        lines.append("## Today's highlights")
+        lines.append("## hot stuff")
         lines.append("")
         for highlight in highlights:
             lines.append(f"- {highlight}")
@@ -215,7 +187,10 @@ def render_note(digest: dict, note_date: str) -> str:
 def main() -> None:
     check_time_guard()
 
-    note_date = datetime.now(ZoneInfo("Europe/Brussels")).date().isoformat()
+    today = datetime.now(ZoneInfo("Europe/Copenhagen"))
+    note_date = today.date().isoformat() 
+    display_date = f"{today.day}/{today.month}-{today.year}"
+
     api_key = os.environ.get("MISTRAL_API_KEY", "")
     if not api_key:
         print("MISTRAL_API_KEY is not set, exiting with failure.")
@@ -235,7 +210,7 @@ def main() -> None:
     note = render_note(digest, note_date)
 
     os.makedirs(NOTE_DIR, exist_ok=True)
-    note_path = os.path.join(NOTE_DIR, f"HN digest {note_date}.md")
+    note_path = os.path.join(NOTE_DIR, f"HN digest {display_date}.md")
     with open(note_path, "w", encoding="utf-8") as f:
         f.write(note)
     print(f"Note written: {note_path}")

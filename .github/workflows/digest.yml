@@ -1,0 +1,48 @@
+name: HN digest
+
+on:
+  schedule:
+    # Hourly tick. The script itself exits unless the local time in
+    # Europe/Brussels is 15:xx, which makes the run DST-proof.
+    - cron: "5 * * * *"
+  # Allows a manual test run from the Actions tab in the browser.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+      # Manual runs always execute; scheduled runs respect the time guard.
+      FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
+      DIGEST_LANGUAGE: English
+      MAX_STORIES: "12"
+      TOP_PICKS: "3"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate today's digest
+        run: python hn_digest.py
+
+      - name: Commit the note
+        run: |
+          git config user.name "hn-digest-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "HN Digest"
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "HN digest $(date -u +%F)"
+            git push
+          fi

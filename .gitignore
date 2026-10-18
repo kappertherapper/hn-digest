@@ -1,0 +1,8 @@
+# macOS
+.DS_Store
+._*
+
+# Obsidian
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.trash/

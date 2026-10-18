@@ -168,6 +168,8 @@ def render_note(digest: dict, display_date: str) -> str:
         for highlight in highlights:
             lines.append(f"- {highlight}")
         lines.append("")
+        lines.append("---")
+        lines.append("---")
 
     stories = digest.get("stories") or []
     for story in stories:
@@ -181,7 +183,6 @@ def render_note(digest: dict, display_date: str) -> str:
             lines.append(f"*Why it matters:* {story['why_it_matters']}")
             lines.append("")
 
-    lines.append("*Generated automatically by hn-digest.*")
     return "\n".join(lines)
 
 

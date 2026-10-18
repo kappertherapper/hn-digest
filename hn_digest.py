@@ -174,12 +174,12 @@ def render_note(digest: dict, display_date: str) -> str:
     for story in stories:
         title = story.get("title", "Untitled")
         lines.append(f"### {title}")
-        lines.append("")
         if story.get("summary"):
             lines.append(str(story["summary"]))
             lines.append("")
         if story.get("why_it_matters"):
             lines.append(f"*Why it matters:* {story['why_it_matters']}")
+            lines.append("")
             lines.append("")
 
     return "\n".join(lines)

@@ -164,10 +164,7 @@ def render_note(digest: dict, display_date: str) -> str:
 
     highlights = digest.get("highlights") or []
     if highlights:
-        lines.append(f"# Hacker News digest {display_date}")
-        lines.append("")
-        lines.append("## hot stuff")
-        lines.append("")
+        lines.append("## hottest stuff:")
         for highlight in highlights:
             lines.append(f"- {highlight}")
         lines.append("")

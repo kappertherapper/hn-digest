@@ -21,10 +21,9 @@ MAX_ARTICLE_FETCH_CHARS = 20000
 FETCH_CONCURRENCY = 5
 
 SYSTEM_PROMPT = (
-    "You are a technology editor writing a short daily digest of Hacker "
-    "News. You receive titles, points, comment counts and optional excerpts "
-    "of article text. Reply only with valid JSON without code fences, using "
-    "the fields 'highlights' and 'stories'."
+    "You are a technology editor writing a short daily digest of Hacker News."
+    "You receive titles, points, comment counts and optional excerpts of article text. "
+    "Reply only with valid JSON without code fences, using the fields 'highlights' and 'stories'."
 )
 
 async def fetch_stories() -> list[dict]:

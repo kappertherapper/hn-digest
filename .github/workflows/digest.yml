@@ -2,7 +2,7 @@ name: HN digest
 
 on:
   schedule:
-    - cron: "10 15 * * *"
+    - cron: "10 13 * * *"
   # Allows a manual test run from the Actions tab in the browser.
   workflow_dispatch:
 

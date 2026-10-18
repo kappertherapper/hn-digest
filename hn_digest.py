@@ -10,7 +10,6 @@ import httpx
 
 HN_SEARCH_URL = "https://hn.algolia.com/api/v1/search"
 MISTRAL_CHAT_URL = "https://api.mistral.ai/v1/chat/completions"
-NOTE_DIR = "HN Digest"
 
 MAX_STORIES = int(os.environ.get("MAX_STORIES", "12"))
 TOP_PICKS = int(os.environ.get("TOP_PICKS", "3"))
@@ -213,9 +212,9 @@ def main() -> None:
     digest = summarize(api_key, stories, note_date)
     note = render_note(digest, display_date)
 
-    month_dir = os.path.join(NOTE_DIR, month_folder)
+    month_dir = month_folder
     os.makedirs(month_dir, exist_ok=True)
-    note_path = os.path.join(month_dir, f"HN digest {file_date}.md")
+    note_path = os.path.join(month_dir, f"{file_date}.md")
     with open(note_path, "w", encoding="utf-8") as f:
         f.write(note)
     print(f"Note written: {note_path}")

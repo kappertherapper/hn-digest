@@ -3,8 +3,7 @@ just a small thing to get hacker news in small format.
 <br></br>
 
 ## How:
-- A GitHub Action ticks hourly (`.github/workflows/digest.yml`)
-- `hn_digest.py` has a time guard: it only runs at 15:00.
+- A GitHub Action ticks 13:10 UTC (`.github/workflows/digest.yml`)
 
 ## What:
 - Top front-page stories collected from the HN Algolia API

@@ -159,9 +159,13 @@ def summarize(api_key: str, stories: list[dict], note_date: str) -> dict:
         sys.exit(1)
 
 
-def render_note(digest: dict, note_date: str) -> str:
+def render_note(digest: dict, display_date: str) -> str:
+    lines: list[str] = []
+
     highlights = digest.get("highlights") or []
     if highlights:
+        lines.append(f"# Hacker News digest {display_date}")
+        lines.append("")
         lines.append("## hot stuff")
         lines.append("")
         for highlight in highlights:
@@ -188,8 +192,10 @@ def main() -> None:
     check_time_guard()
 
     today = datetime.now(ZoneInfo("Europe/Copenhagen"))
-    note_date = today.date().isoformat() 
-    display_date = f"{today.day}/{today.month}-{today.year}"
+    note_date = today.date().isoformat()
+    month_folder = f"{today.month}-{today.year:02d}"
+    display_date = f"{today.day:02d}/{today.month:02d}-{today.year}"
+    file_date = f"{today.day:02d}-{today.month:02d}-{today.year}"
 
     api_key = os.environ.get("MISTRAL_API_KEY", "")
     if not api_key:
@@ -207,10 +213,11 @@ def main() -> None:
     print(f"Enriched {with_text} of {len(stories)} with article text.")
 
     digest = summarize(api_key, stories, note_date)
-    note = render_note(digest, note_date)
+    note = render_note(digest, display_date)
 
-    os.makedirs(NOTE_DIR, exist_ok=True)
-    note_path = os.path.join(NOTE_DIR, f"HN digest {display_date}.md")
+    month_dir = os.path.join(NOTE_DIR, month_folder)
+    os.makedirs(month_dir, exist_ok=True)
+    note_path = os.path.join(month_dir, f"HN digest {file_date}.md")
     with open(note_path, "w", encoding="utf-8") as f:
         f.write(note)
     print(f"Note written: {note_path}")

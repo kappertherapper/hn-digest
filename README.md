@@ -2,7 +2,7 @@ just a small thing to get hacker news in small format.
 
 <br></br>
 
-- A GitHub Action ticks 13:10 UTC (`.github/workflows/digest.yml`)
+- A GitHub Action ticks 13:37 UTC (`.github/workflows/digest.yml`)
 - Top front-page stories collected from the HN Algolia API
 - The Mistral chat API turns them into highlights and per-story
   summaries,

@@ -27,17 +27,6 @@ SYSTEM_PROMPT = (
     "the fields 'highlights' and 'stories'."
 )
 
-
-def check_time_guard() -> None:
-    if os.environ.get("FORCE_RUN") == "1":
-        return
-    now = datetime.now(ZoneInfo("Europe/Copenhagen"))
-    if now.hour != 15:
-        print(f"Not 15:00 CPH yet (local time is {now:%H:%M}), skipping.")
-        sys.exit(0)
-    print(f"Running, local time is {now:%H:%M}.")
-
-
 async def fetch_stories() -> list[dict]:
     params = {"tags": "front_page", "hitsPerPage": 40}
     async with httpx.AsyncClient(timeout=30) as client:
@@ -186,8 +175,6 @@ def render_note(digest: dict, display_date: str) -> str:
 
 
 def main() -> None:
-    check_time_guard()
-
     today = datetime.now(ZoneInfo("Europe/Copenhagen"))
     note_date = today.date().isoformat()
     month_folder = f"{today.month}-{today.year:02d}"

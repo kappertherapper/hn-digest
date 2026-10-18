@@ -2,7 +2,7 @@ name: HN digest
 
 on:
   schedule:
-    - cron: "10 13 * * *"
+    - cron: "37 13 * * *"
   # Allows a manual test run from the Actions tab in the browser.
   workflow_dispatch:
 
@@ -15,8 +15,6 @@ jobs:
     timeout-minutes: 10
     env:
       MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-      # Manual runs always execute; scheduled runs respect the time guard.
-      FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
       DIGEST_LANGUAGE: English
       MAX_STORIES: "12"
       TOP_PICKS: "3"

@@ -147,7 +147,7 @@ async def summarize(api_key: str, stories: list[dict], note_date: str) -> dict:
         sys.exit(1)
 
 
-def render_note(: dict, display_date: str) -> str:
+def render_note(digest: dict, display_date: str) -> str:
     lines: list[str] = []
 
     highlights = .get("highlights") or []

@@ -58,7 +58,7 @@ async def enrich_with_article_text(stories: list[dict]) -> list[dict]:
                 async with httpx.AsyncClient(
                     timeout=20,
                     follow_redirects=True,
-                    headers={"User-Agent": "hn--action/0.1"},
+                    headers={"User-Agent": "hn-digest-action/0.1"},
                 ) as client:
                     response = await client.get(url)
             content_type = response.headers.get("content-type", "")
@@ -75,7 +75,7 @@ async def enrich_with_article_text(stories: list[dict]) -> list[dict]:
 
 
 async def summarize(api_key: str, stories: list[dict], note_date: str) -> dict:
-    """Send the stories to the Mistral chat API and get a structured ."""
+    """Send the stories to the Mistral chat API and get a structured digest."""
     payload = [
         {
             "title": s.get("title"),
@@ -102,16 +102,16 @@ async def summarize(api_key: str, stories: list[dict], note_date: str) -> dict:
         "the most important points across today's stories, at most 20 "
         "words each.\n"
         "- stories follows the same order as the input, one entry per story.\n"
-        f"- summary is 2-3 sentences written in {_LANGUAGE}, readable "
+        f"- summary is 2-3 sentences written in {DIGEST_LANGUAGE}, readable "
         "for a developer.\n"
-        f"- why_it_matters is 1 sentence in {_LANGUAGE} explaining why "
+        f"- why_it_matters is 1 sentence in {DIGEST_LANGUAGE} explaining why "
         "the story matters.\n"
-        f"- Write in {_LANGUAGE}, but keep technical terms and "
+        f"- Write in {DIGEST_LANGUAGE}, but keep technical terms and "
         "product names as they are.\n"
     )
 
     request = {
-        "model": _MODEL,
+        "model": DIGEST_MODEL,
         "temperature": 0.3,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -150,7 +150,7 @@ async def summarize(api_key: str, stories: list[dict], note_date: str) -> dict:
 def render_note(digest: dict, display_date: str) -> str:
     lines: list[str] = []
 
-    highlights = .get("highlights") or []
+    highlights = digest.get("highlights") or []
     if highlights:
         lines.append("## hottest stuff:")
         for highlight in highlights:
@@ -182,6 +182,8 @@ def main() -> None:
     file_date = f"{today.day:02d}-{today.month:02d}-{today.year}"
     note_path = os.path.join(month_folder, f"{file_date}.md")
 
+    # Scheduled backup runs skip the rest of the day once the digest exists.
+    # FORCE_RUN=1 (set for manual runs) regenerates and overwrites the file.
     force_run = os.environ.get("FORCE_RUN", "") == "1"
     if os.path.exists(note_path) and not force_run:
         print(f"{note_path} already exists, nothing to do.")

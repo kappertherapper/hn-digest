@@ -26,6 +26,7 @@ SYSTEM_PROMPT = (
     "Reply only with valid JSON without code fences, using the fields 'highlights' and 'stories'."
 )
 
+
 async def fetch_stories() -> list[dict]:
     params = {"tags": "front_page", "hitsPerPage": 40}
     async with httpx.AsyncClient(timeout=30) as client:
@@ -73,7 +74,7 @@ async def enrich_with_article_text(stories: list[dict]) -> list[dict]:
     return list(await asyncio.gather(*(fetch_one(s) for s in stories)))
 
 
-def summarize(api_key: str, stories: list[dict], note_date: str) -> dict:
+async def summarize(api_key: str, stories: list[dict], note_date: str) -> dict:
     """Send the stories to the Mistral chat API and get a structured digest."""
     payload = [
         {
@@ -179,6 +180,12 @@ def main() -> None:
     month_folder = f"{today.month}-{today.year:02d}"
     display_date = f"{today.day:02d}/{today.month:02d}-{today.year}"
     file_date = f"{today.day:02d}-{today.month:02d}-{today.year}"
+    note_path = os.path.join(month_folder, f"{file_date}.md")
+
+    force_run = os.environ.get("FORCE_RUN", "") == "1"
+    if os.path.exists(note_path) and not force_run:
+        print(f"{note_path} already exists, nothing to do.")
+        sys.exit(0)
 
     api_key = os.environ.get("MISTRAL_API_KEY", "")
     if not api_key:
@@ -198,9 +205,7 @@ def main() -> None:
     digest = summarize(api_key, stories, note_date)
     note = render_note(digest, display_date)
 
-    month_dir = month_folder
-    os.makedirs(month_dir, exist_ok=True)
-    note_path = os.path.join(month_dir, f"{file_date}.md")
+    os.makedirs(month_folder, exist_ok=True)
     with open(note_path, "w", encoding="utf-8") as f:
         f.write(note)
     print(f"Note written: {note_path}")
